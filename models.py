@@ -22,17 +22,18 @@ class Users(Base):
 
 
 class Products(Base):
-    __tablename__ = "products"
+    __tablename__ = "supermarket_products"
 
     id = Column(Integer, primary_key=True, index=True)
     product_id = Column(Integer, index=True)
     supermarket = Column(String)
     product_name = Column(String)
     product_url = Column(String)
-    product_price = Column(Float)
-    price_by_weight = Column(String)
-    quantity = Column(Float)
-    unit = Column(String)
+    product_price_gbp = Column(Float)
+    product_quantity = Column(Float)
+    product_unit = Column(String)
+    gbp_per_100g = Column(String)
+    gbp_per_unit = Column(String)
     product_image = Column(String)
     date = Column(DateTime) 
 
@@ -60,3 +61,9 @@ class CommunityProducts(Base):
     date = Column(DateTime) 
 
     owner = relationship("Users", back_populates="products")
+
+
+
+
+# ALTER TABLE supermarket_products ADD COLUMN __ts_vector__ tsvector 
+# GENERATED ALWAYS AS (to_tsvector('english', product_name || ' ' || supermarket)) STORED;
