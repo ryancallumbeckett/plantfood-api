@@ -22,7 +22,7 @@ class Users(Base):
 
 
 class Products(Base):
-    __tablename__ = "supermarket_products"
+    __tablename__ = "supermarket_products_current"
 
     id = Column(Integer, primary_key=True, index=True)
     product_id = Column(Integer, index=True)

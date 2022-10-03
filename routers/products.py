@@ -79,10 +79,10 @@ async def get_estimated_price(product_name: str, supermarket: Optional[str] = No
     if supermarket:
         product_model = db.query(models.Products.product_name, models.Products.supermarket, models.Products.product_price_gbp).\
             filter(models.Products.supermarket == supermarket).\
-                filter(models.Products.__ts_vector__.match(product_name)).all()
+                filter(models.Products.tsvector.match(product_name)).all()
     else:
         product_model = db.query(models.Products.product_name, models.Products.supermarket, models.Products.product_price_gbp).\
-            filter(models.Products.__ts_vector__.match(product_name)).all()
+            filter(models.Products.tsvector.match(product_name)).all()
          
     if product_model is not None:
         return product_model
@@ -147,7 +147,7 @@ async def get_estimated_price(ingredient_name: str,
         elif product_unit == "G":
             if product_model["gbp_per_100g"] is not None:
                 price_per_100g = product_model["gbp_per_100g"]
-                estimated_cost = float(price_per_100g) * (gram_weight/100)
+                estimated_cost = round(float(price_per_100g) * (gram_weight/100), 2)
             else:
                 price_per_unit = product_model["gbp_per_unit"]
                 estimated_cost = round(float(price_per_unit) * product_quantity, 2)
