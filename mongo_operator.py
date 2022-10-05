@@ -33,3 +33,6 @@ class MongoOperator():
 
         return result
 
+mongo = MongoOperator()
+result = mongo.fuzzy_search("apples", "ingredient_conversions")
+print(result)

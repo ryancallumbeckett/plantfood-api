@@ -71,7 +71,7 @@ async def search_products(product_name: str, supermarket: Optional[str] = None, 
     raise http_exception()
 
 
-@router.get("/product/price/{product_price}")
+@router.get("/product/full_price/{product_name}")
 async def get_estimated_price(product_name: str, supermarket: Optional[str] = None, db: Session = Depends(get_db)):
     
     product_name = prep_string_for_search(product_name)
@@ -79,10 +79,10 @@ async def get_estimated_price(product_name: str, supermarket: Optional[str] = No
     if supermarket:
         product_model = db.query(models.Products.product_name, models.Products.supermarket, models.Products.product_price_gbp).\
             filter(models.Products.supermarket == supermarket).\
-                filter(models.Products.tsvector.match(product_name)).all()
+                filter(models.Products.__ts_vector__.match(product_name)).all()
     else:
         product_model = db.query(models.Products.product_name, models.Products.supermarket, models.Products.product_price_gbp).\
-            filter(models.Products.tsvector.match(product_name)).all()
+            filter(models.Products.__ts_vector__.match(product_name)).all()
          
     if product_model is not None:
         return product_model
@@ -91,8 +91,7 @@ async def get_estimated_price(product_name: str, supermarket: Optional[str] = No
 
 
 
-
-@router.get("/product/calculate_price/{product_price}")
+@router.get("/product/calculate_price/{product_id}")
 async def get_estimated_price(ingredient_name: str, 
                                 product_quantity: float, 
                                 product_unit: str, 
@@ -100,24 +99,6 @@ async def get_estimated_price(ingredient_name: str,
                                 supermarket: Optional[str] = None, 
                                 db: Session = Depends(get_db)):
 
-    #Find the converion metrics for the ingredient
-    mongo = MongoOperator()
-    results_object = mongo.fuzzy_search(ingredient_name, "ingredient_name")
-    results = list(results_object)
-    grams_per_cup = results[0]["grams_per_cup"]
-    grams_per_quantity = results[0]["grams_per_quantity"]
-    product_unit = product_unit.upper()
-
-    if product_unit != "EACH":
-        unit_lemma =  convert_units_to_lemma(product_unit.lower())
-        gram_weight = convert_units_to_grams(product_quantity, unit_lemma, grams_per_cup, ingredient_name)
-        product_unit = "G"
-    else:
-        gram_weight = grams_per_quantity
-
-
-    #Make calls to postgresdb
-    ingredient_name = prep_string_for_search(ingredient_name)
     if supermarket:
         product_model = db.query(models.Products.product_name, models.Products.supermarket, models.Products.product_price_gbp, models.Products.product_quantity, models.Products.gbp_per_100g, models.Products.gbp_per_unit).\
             filter(models.Products.supermarket == supermarket).\
@@ -155,69 +136,6 @@ async def get_estimated_price(ingredient_name: str,
         return estimated_cost, product_model
 
     raise http_exception()
-
-
-@router.post("/product")
-async def add_product(product: Product, user: dict = Depends(get_current_user), db: Session = Depends(get_db)):
-
-    if user is None:
-        raise user_exception()
-    for s in product.suppliers:
-        product_model = models.CommunityProducts()
-        product_model.supplier = s
-        product_model.product_name = product.product_name
-        product_model.product_url = product.product_url
-        product_model.product_price = product.product_price
-        product_model.quantity = product.quantity
-        product_model.unit = product.unit
-        product_model.product_image = product.product_image
-        product_model.date = datetime.now()
-        product_model.owner_id = user.get("id")
-
-        db.add(product_model)
-        db.commit()
-
-    return successful_response(201)
-
-
-@router.delete("/{product_id}")
-async def delete_product(product_id: int, user: dict = Depends(get_current_user), db: Session = Depends(get_db)):
-    if user is None:
-        raise user_exception()
-
-    todo_model = db.query(models.CommunityProducts).filter(models.CommunityProducts.product_id == product_id).filter(models.CommunityProducts.owner_id == user.get("id")).first()
-    if todo_model is None:
-        raise http_exception()
-
-    db.query(models.CommunityProducts).filter(models.CommunityProducts.product_id == product_id).delete()
-    db.commit()
-
-    return successful_response(200)
-
-
-
-@router.put("/{product_id}")
-async def update_product(product_id: int, product: Product, user: dict = Depends(get_current_user), db: Session = Depends(get_db)):
-    if user is None:
-        raise user_exception()
-
-    product_model = db.query(models.CommunityProducts).filter(models.CommunityProducts.product_id == product_id).filter(models.CommunityProducts.owner_id == user.get("id")).first()
-    if product_model is None:
-        raise http_exception()
-
-    product_model.supplier = product.supplier
-    product_model.product_name = product.product_name
-    product_model.product_url = product.product_url
-    product_model.product_price = product.product_price
-    product_model.quantity = product.quantity
-    product_model.unit = product.unit
-    product_model.product_image = product.product_image
-    product_model.date = datetime.now()
-
-    db.add(product_model)
-    db.commit()
-
-    return successful_response(200)
 
 
 

@@ -1,7 +1,9 @@
 
+import json
 from typing import Collection
 from psycopg2 import Date
 from sqlalchemy import Boolean, Column, Float, Integer, String, ForeignKey, DateTime, Index, Computed
+from sqlalchemy.dialects.postgresql import JSONB, ARRAY
 from sqlalchemy.orm import relationship
 from database import Base
 from ts_vector import TSVector
@@ -19,6 +21,29 @@ class Users(Base):
     is_active = Column(Boolean, default=True)
 
     products = relationship("CommunityProducts", back_populates="owner")
+
+
+class Ingredients(Base):
+    __tablename__ = "ingredients"
+
+    id = Column(Integer, primary_key=True, index=True)
+    ingredient_name = Column(String, unique=True, index=True)
+    ingredient_image = Column(String)
+    ingredient_categories = Column(JSONB)
+    supermarket_aisle = Column(String)
+    synonyms = Column(ARRAY(String))
+    nutrition_information = Column(JSONB)
+    nutrition_source = Column(String)
+    nutrition_source_ingredient = Column(String)
+    usda_id = Column(String)
+
+    __ts_vector__ = Column(TSVector(),Computed(
+         "to_tsvector('english', ingredient_name)",
+         persisted=True))
+
+    __table_args__ = (Index('ix_video___ts_vector__',
+          __ts_vector__, postgresql_using='gin'),)
+
 
 
 class Products(Base):
