@@ -9,13 +9,14 @@ class MongoOperator():
     username = config['MONGODB']['username']
     password = config['MONGODB']['password']
     cluster = f"mongodb+srv://{username}:{password}@cluster0.rjktdw5.mongodb.net/?retryWrites=true&w=majority"
-    client = MongoClient(cluster)
-    db = client.ingredients
+
 
         
     def fuzzy_search(self, search_query, path):
 
-        table = self.db.ingredient_conversions
+        client = MongoClient(self.cluster)
+        db = client.ingredients
+        table = db.ingredient_conversions
         result = table.aggregate([
             {
                 "$search": {
@@ -33,6 +34,3 @@ class MongoOperator():
 
         return result
 
-mongo = MongoOperator()
-result = mongo.fuzzy_search("apples", "ingredient_conversions")
-print(result)

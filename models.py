@@ -23,6 +23,30 @@ class Users(Base):
     products = relationship("CommunityProducts", back_populates="owner")
 
 
+class Recipes(Base):
+    __tablename__ = "recipes"
+
+    id = Column(Integer, primary_key=True, index=True)
+    recipe_name = Column(String, index=True)
+    channel_id = Column(String, index=True)
+    channel_name = Column(String, index=True)
+    recipe_link = Column(String)
+    recipe_image= Column(String)
+    recipe_time = Column(Float)
+    recipe_servings = Column(Integer)
+    nutrition_score = Column(Float)
+    ingredients_map = Column(ARRAY(String))
+    recipe_cuisine = Column(JSONB)
+
+    __ts_vector__ = Column(TSVector(),Computed(
+         "to_tsvector('english', recipe_name)",
+         persisted=True))
+
+    __table_args__ = (Index('recipe_name__ts_vector__',
+          __ts_vector__, postgresql_using='gin'),)
+
+
+
 class Ingredients(Base):
     __tablename__ = "ingredients"
 

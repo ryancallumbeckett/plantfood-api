@@ -14,8 +14,8 @@ from datetime import datetime
 
 
 router = APIRouter(
-    prefix="/community_products",
-    tags=["community_products"],
+    prefix="/posts",
+    tags=["posts"],
     responses={404: {"description": "Not found"}}
 )
 
@@ -42,7 +42,17 @@ class Product(BaseModel):
     date: datetime
 
 
-@router.get("/{product_id}")
+class Recipe(BaseModel):
+    recipe_name: str
+    recipe_link: Optional[str]
+    recipe_image: Optional[str]
+    recipe_time: Optional[str]
+    recipe_servings: Optional[str]
+    recipe_cuisine: Optional[str]
+
+
+
+@router.get("/products/{product_id}")
 async def read_product_by_id(product_id: str, db: Session = Depends(get_db)):
     product_model = db.query(models.CommunityProducts).filter(models.CommunityProducts.id == product_id).first()
     if product_model is not None:
@@ -51,7 +61,7 @@ async def read_product_by_id(product_id: str, db: Session = Depends(get_db)):
 
 
 
-@router.post("/product")
+@router.post("/products/product")
 async def add_product(product: Product, user: dict = Depends(get_current_user), db: Session = Depends(get_db)):
 
     if user is None:
@@ -74,7 +84,7 @@ async def add_product(product: Product, user: dict = Depends(get_current_user), 
     return successful_response(201)
 
 
-@router.delete("/{product_id}")
+@router.delete("/products/{product_id}")
 async def delete_product(product_id: int, user: dict = Depends(get_current_user), db: Session = Depends(get_db)):
     if user is None:
         raise user_exception()
@@ -90,7 +100,7 @@ async def delete_product(product_id: int, user: dict = Depends(get_current_user)
 
 
 
-@router.put("/{product_id}")
+@router.put("/products/{product_id}")
 async def update_product(product_id: int, product: Product, user: dict = Depends(get_current_user), db: Session = Depends(get_db)):
     if user is None:
         raise user_exception()

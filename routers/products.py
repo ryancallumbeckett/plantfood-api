@@ -99,6 +99,24 @@ async def get_estimated_price(ingredient_name: str,
                                 supermarket: Optional[str] = None, 
                                 db: Session = Depends(get_db)):
 
+    #Find the converion metrics for the ingredient
+    mongo = MongoOperator()
+    results_object = mongo.fuzzy_search(ingredient_name, "ingredient_name")
+    results = list(results_object)
+    grams_per_cup = results[0]["grams_per_cup"]
+    grams_per_quantity = results[0]["grams_per_quantity"]
+    product_unit = product_unit.upper()
+
+    if product_unit != "EACH":
+        unit_lemma =  convert_units_to_lemma(product_unit.lower())
+        gram_weight = convert_units_to_grams(product_quantity, unit_lemma, grams_per_cup, ingredient_name)
+        product_unit = "G"
+    else:
+        gram_weight = grams_per_quantity
+
+
+    #Make calls to postgresdb
+    ingredient_name = prep_string_for_search(ingredient_name)
     if supermarket:
         product_model = db.query(models.Products.product_name, models.Products.supermarket, models.Products.product_price_gbp, models.Products.product_quantity, models.Products.gbp_per_100g, models.Products.gbp_per_unit).\
             filter(models.Products.supermarket == supermarket).\
