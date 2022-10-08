@@ -1,6 +1,7 @@
 
 import json
 from typing import Collection
+from uuid import UUID
 from psycopg2 import Date
 from sqlalchemy import Boolean, Column, Float, Integer, String, ForeignKey, DateTime, Index, Computed
 from sqlalchemy.dialects.postgresql import JSONB, ARRAY
@@ -26,7 +27,7 @@ class Users(Base):
 class Recipes(Base):
     __tablename__ = "recipes"
 
-    id = Column(Integer, primary_key=True, index=True)
+    id = Column(String, primary_key=True, index=True)
     recipe_name = Column(String, index=True)
     channel_id = Column(String, index=True)
     channel_name = Column(String, index=True)
@@ -35,7 +36,7 @@ class Recipes(Base):
     recipe_time = Column(Float)
     recipe_servings = Column(Integer)
     nutrition_score = Column(Float)
-    ingredients_map = Column(ARRAY(String))
+    ingredients_map = Column(JSONB)
     recipe_cuisine = Column(JSONB)
 
     __ts_vector__ = Column(TSVector(),Computed(
@@ -45,6 +46,37 @@ class Recipes(Base):
     __table_args__ = (Index('recipe_name__ts_vector__',
           __ts_vector__, postgresql_using='gin'),)
 
+
+class RecipeDetails(Base):
+    __tablename__= "recipe_details"
+
+    id = Column(String, primary_key=True, index=True)
+    recipe_name = Column(String, index=True)
+    channel_id = Column(String, index=True)
+    channel_name = Column(String, index=True)
+    ingredients_raw = Column(ARRAY(String))
+    ingredients_formatted = Column(String)
+    method_raw = Column(ARRAY(String))
+    method_formatted = Column(ARRAY(JSONB))
+
+    id = Column(Integer, primary_key=True, index=True)
+
+
+class RecipeNutrition(Base):
+    __tablename__= "recipe_nutrition"
+
+    id = Column(String, primary_key=True, index=True)
+    recipe_name = Column(String, index=True)
+    channel_id = Column(String, index=True)
+    channel_name = Column(String, index=True)
+    protein_per_serving_grams = Column(Float)
+    carbs_per_serving_grams = Column(Float)
+    fat_per_serving_grams = Column(Float)
+    calories_per_serving = Column(Float)
+    nutrition_per_serving = Column(JSONB)
+    daily_dozen = Column(JSONB)
+
+    id = Column(Integer, primary_key=True, index=True)
 
 
 class Ingredients(Base):

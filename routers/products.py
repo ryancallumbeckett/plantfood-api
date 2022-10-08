@@ -34,6 +34,7 @@ def get_db():
         db.close()
 
 
+
 class Product(BaseModel):
     suppliers: list
     product_name: str
