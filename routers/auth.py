@@ -12,6 +12,7 @@ from sqlalchemy.orm import Session
 from database import SessionLocal, engine
 from datetime import date, datetime, timedelta
 from jose import jwt, JWTError
+import secrets
 
 SECRET_KEY = "xE0kfXzPW1MMaisIPPoUWMg3oruSBCpt"
 ALGORITHM =  "HS256"
@@ -22,6 +23,7 @@ class CreateUser(BaseModel):
     first_name: str
     last_name: str
     password: str
+    public_channel: bool
 
 bcrypt_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
@@ -87,6 +89,8 @@ async def get_current_user(token: str = Depends(oauth2_bearer)):
 @router.post("/create/user")
 async def create_new_user(create_user: CreateUser, db: Session = Depends(get_db)):
     create_user_model = models.Users()
+    user_id = secrets.token_hex(nbytes=16)
+    create_user_model.id = user_id
     create_user_model.email = create_user.email
     create_user_model.username = create_user.username
     create_user_model.first_name = create_user.first_name
@@ -96,9 +100,29 @@ async def create_new_user(create_user: CreateUser, db: Session = Depends(get_db)
 
     create_user_model.hashed_password =  hash_password
     create_user_model.is_active = True
+    create_user_model.public_channel = create_user.public_channel
 
     db.add(create_user_model)
+
+    if create_user.public_channel is True:
+    
+        create_channel_model = models.Channels()
+        channel_name = create_user.username
+        create_channel_model.id = user_id
+        create_channel_model.channel_name = channel_name
+        create_channel_model.channel_path = channel_name.replace(" ", "-").lower()
+        create_channel_model.recipe_count = 0
+        create_channel_model.website = None
+        create_channel_model.facebook = None
+        create_channel_model.instagram = None
+        create_channel_model.youtube = None
+        create_channel_model.user_id = user_id
+
+        db.add(create_channel_model)
+    
     db.commit()
+
+    return "User created successfully"
 
 
 @router.post("/token")

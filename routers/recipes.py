@@ -2,6 +2,7 @@
 import sys
 sys.path.append("..")
 from fastapi import Depends, HTTPException, APIRouter
+from .auth import get_current_user, user_exception, get_password_hash, verify_password
 import models
 from database import engine, SessionLocal
 from sqlalchemy.orm import Session
@@ -10,6 +11,8 @@ from pydantic import BaseModel
 from typing import Optional
 from enum import Enum
 import secrets
+from datetime import datetime
+from nlp_formatter import run_nlp
 
 
 
@@ -138,52 +141,132 @@ async def advanced_search(search_query : str, ingredients: str, protein_operator
 
 
 @router.post("/")
-async def create_recipe(create_recipe: Recipe, db: Session = Depends(get_db)):
+async def create_recipe(create_recipe: Recipe, user: dict = Depends(get_current_user), db: Session = Depends(get_db)):
+
+    if user is None:
+        raise user_exception()
+
+    result = run_nlp(create_recipe.ingredients, create_recipe.recipe_servings)
 
     recipe_id = secrets.token_hex(nbytes=16)
-
     recipe_model = models.Recipes()
     recipe_model.id = recipe_id
     recipe_model.recipe_name = create_recipe.recipe_name
-    recipe_model.channel_id = "ryan-beckett"
-    recipe_model.channel_name = "ryan-beckett"
+    recipe_model.channel_id = user.get("id")
+    recipe_model.channel_name = user.get("username")
     recipe_model.recipe_link = create_recipe.recipe_link
+    recipe_model.recipe_image = create_recipe.recipe_image
+    recipe_model.recipe_time = create_recipe.recipe_time
     recipe_model.recipe_servings = create_recipe.recipe_servings
-    recipe_model.nutrition_score = float(0)
-    recipe_model.ingredients_map = {}
-    recipe_model.recipe_cuisine = {}
+    recipe_model.nutrition_score = result["micronutrient_score"]
+    recipe_model.ingredients_map = result["ingredients_map"]
+    recipe_model.recipe_cuisine = create_recipe.cuisine
 
     details_model = models.RecipeDetails()
     details_model.id = recipe_id
     details_model.recipe_name = create_recipe.recipe_name
-    details_model.channel_id = "ryan-beckett"
-    details_model.channel_name = "ryan-beckett"
+    details_model.channel_id = user.get("id")
+    details_model.channel_name = user.get("username")
     details_model.ingredients_raw = create_recipe.ingredients
-    details_model.channel_name = None
+    details_model.ingredients_formatted = result["ingredients_formatted"]
     details_model.method_raw = create_recipe.method
     details_model.method_formatted = None
+    details_model.last_updated = datetime.now()
 
     nutrition_model = models.RecipeNutrition()
     nutrition_model.id = recipe_id
     nutrition_model.recipe_name = create_recipe.recipe_name
-    nutrition_model.channel_id = "ryan-beckett"
-    nutrition_model.channel_name = "ryan-beckett"
-    nutrition_model.protein_per_serving_grams = None
-    nutrition_model.carbs_per_serving_grams = None
-    nutrition_model.fat_per_serving_grams = None
-    nutrition_model.calories_per_serving = None
-    nutrition_model.nutrition_per_serving = None
-    nutrition_model.daily_dozen = None
+    nutrition_model.channel_id = user.get("id")
+    nutrition_model.channel_name = user.get("username")
+    nutrition_model.protein_per_serving_grams = result["protein_per_serving_grams"]
+    nutrition_model.carbs_per_serving_grams = result["carbs_per_serving_grams"]
+    nutrition_model.fat_per_serving_grams = result["fat_per_serving_grams"]
+    nutrition_model.calories_per_serving = result["calories_per_serving"]
+    nutrition_model.nutrition_per_serving = result["nutrition_per_serving"]
 
     db.add(recipe_model)
+    db.add(nutrition_model)
+    db.add(details_model)
     db.commit()
 
+    return successful_response(200)
 
 
+
+@router.delete("/{recipe_id}")
+async def delete_recipe_by_id(recipe_id: str, user: dict = Depends(get_current_user), db: Session = Depends(get_db)):
+    if user is None:
+        raise user_exception()
+
+    recipe_model = db.query(models.Recipes).filter(models.Recipes.id == recipe_id).filter(models.Recipes.channel_id == user.get("id")).first()
+    if recipe_model is None:
+        raise http_exception()
+
+    details_model = db.query(models.RecipeDetails).filter(models.RecipeDetails.id == recipe_id).filter(models.RecipeDetails.channel_id == user.get("id")).first()
+    if details_model is None:
+        raise http_exception()
+
+    nutrition_model = db.query(models.RecipeNutrition).filter(models.RecipeNutrition.id == recipe_id).filter(models.RecipeNutrition.channel_id == user.get("id")).first()
+    if nutrition_model is None:
+        raise http_exception()
     
-    print("recipe created")
+    db.query(models.Recipes).filter(models.Recipes.id == recipe_id).delete()
+    db.query(models.RecipeDetails).filter(models.RecipeDetails.id == recipe_id).delete()
+    db.query(models.RecipeNutrition).filter(models.RecipeNutrition.id == recipe_id).delete()
+
+    db.commit()
+
+    return successful_response(200)
 
 
+@router.put("/{recipe_id}")
+async def update_recipe_by_id(recipe_id: str, recipe: Recipe, user: dict = Depends(get_current_user), db: Session = Depends(get_db)):
+    if user is None:
+        raise user_exception()
+
+    recipe_model = db.query(models.Recipes).filter(models.Recipes.id == recipe_id).filter(models.Recipes.channel_id == user.get("id")).first()
+    if recipe_model is None:
+        raise http_exception()
+
+    details_model = db.query(models.RecipeDetails).filter(models.RecipeDetails.id == recipe_id).filter(models.RecipeDetails.channel_id == user.get("id")).first()
+    if details_model is None:
+        raise http_exception()
+
+    nutrition_model = db.query(models.RecipeNutrition).filter(models.RecipeNutrition.id == recipe_id).filter(models.RecipeNutrition.channel_id == user.get("id")).first()
+    if nutrition_model is None:
+        raise http_exception()
+
+    result = run_nlp(recipe.ingredients, recipe.recipe_servings)
+
+    recipe_model.recipe_name = recipe.recipe_name
+    recipe_model.recipe_link = recipe.recipe_link
+    recipe_model.recipe_image = recipe.recipe_image
+    recipe_model.recipe_time = recipe.recipe_time
+    recipe_model.recipe_servings = recipe.recipe_servings
+    recipe_model.nutrition_score = result["micronutrient_score"]
+    recipe_model.ingredients_map = result["ingredients_map"]
+    recipe_model.recipe_cuisine = recipe.cuisine
+
+    details_model.recipe_name = recipe.recipe_name
+    details_model.ingredients_raw = recipe.ingredients
+    details_model.ingredients_formatted = result["ingredients_formatted"]
+    details_model.method_raw = recipe.method
+    details_model.method_formatted = None
+    details_model.last_updated = datetime.now()
+
+    nutrition_model.recipe_name = recipe.recipe_name
+    nutrition_model.protein_per_serving_grams = result["protein_per_serving_grams"]
+    nutrition_model.carbs_per_serving_grams = result["carbs_per_serving_grams"]
+    nutrition_model.fat_per_serving_grams = result["fat_per_serving_grams"]
+    nutrition_model.calories_per_serving = result["calories_per_serving"]
+    nutrition_model.nutrition_per_serving = result["nutrition_per_serving"]
+
+    db.add(recipe_model)
+    db.add(nutrition_model)
+    db.add(details_model)
+    db.commit()
+
+    return successful_response(200)
 
 
 
@@ -245,5 +328,7 @@ def successful_response(status_code: int):
 
 def http_exception():
     return HTTPException(status_code=404, detail='Item not found')
+
+
 
 

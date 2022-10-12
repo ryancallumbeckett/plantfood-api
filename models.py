@@ -1,8 +1,5 @@
 
-import json
-from typing import Collection
-from uuid import UUID
-from psycopg2 import Date
+from datetime import datetime
 from sqlalchemy import Boolean, Column, Float, Integer, String, ForeignKey, DateTime, Index, Computed
 from sqlalchemy.dialects.postgresql import JSONB, ARRAY
 from sqlalchemy.orm import relationship
@@ -13,15 +10,30 @@ from ts_vector import TSVector
 class Users(Base):
     __tablename__ = "users"
 
-    id = Column(Integer, primary_key=True, index=True)
+    id = Column(String, primary_key=True, index=True)
     email = Column(String, unique=True, index=True)
     username = Column(String, unique=True, index=True)
     first_name = Column(String)
     last_name = Column(String)
     hashed_password = Column(String)
     is_active = Column(Boolean, default=True)
+    public_channel = Column(Boolean, default=True)
 
     products = relationship("CommunityProducts", back_populates="owner")
+
+
+class Channels(Base):
+    __tablename__ = "channels"
+
+    id = Column(String, primary_key=True, index=True)
+    channel_name = Column(String, unique=True, index=True)
+    channel_path = Column(String, unique=True, index=True)
+    recipe_count = Column(String)
+    website = Column(String)
+    facebook = Column(String)
+    instagram = Column(String)
+    youtube = Column(String)
+    user_id = Column(String)
 
 
 class Recipes(Base):
@@ -32,7 +44,7 @@ class Recipes(Base):
     channel_id = Column(String, index=True)
     channel_name = Column(String, index=True)
     recipe_link = Column(String)
-    recipe_image= Column(String)
+    recipe_image = Column(String)
     recipe_time = Column(Float)
     recipe_servings = Column(Integer)
     nutrition_score = Column(Float)
@@ -54,10 +66,11 @@ class RecipeDetails(Base):
     recipe_name = Column(String, index=True)
     channel_id = Column(String, index=True)
     channel_name = Column(String, index=True)
-    ingredients_raw = Column(ARRAY(String))
-    ingredients_formatted = Column(String)
-    method_raw = Column(ARRAY(String))
-    method_formatted = Column(ARRAY(JSONB))
+    ingredients_raw = Column(String)
+    ingredients_formatted = Column(JSONB)
+    method_raw = Column(String)
+    method_formatted = Column(ARRAY(String))
+    last_updated = Column(DateTime)
 
     id = Column(Integer, primary_key=True, index=True)
 
@@ -74,7 +87,6 @@ class RecipeNutrition(Base):
     fat_per_serving_grams = Column(Float)
     calories_per_serving = Column(Float)
     nutrition_per_serving = Column(JSONB)
-    daily_dozen = Column(JSONB)
 
     id = Column(Integer, primary_key=True, index=True)
 
@@ -144,7 +156,3 @@ class CommunityProducts(Base):
     owner = relationship("Users", back_populates="products")
 
 
-
-
-# ALTER TABLE supermarket_products ADD COLUMN __ts_vector__ tsvector 
-# GENERATED ALWAYS AS (to_tsvector('english', product_name || ' ' || supermarket)) STORED;
