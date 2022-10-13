@@ -5,7 +5,7 @@ sys.path.append("..")
 from datetime import datetime
 from fastapi import Depends, HTTPException, APIRouter
 import models
-from database import engine, SessionLocal
+from db import engine, SessionLocal
 from sqlalchemy.orm import Session
 from sqlalchemy.sql.expression import func
 from pydantic import BaseModel, Field
@@ -14,7 +14,8 @@ from routers.auth import get_current_user, user_exception
 from .auth import get_current_user, user_exception, get_password_hash, verify_password
 from datetime import datetime
 from core.conversion_utils import convert_units_to_grams, convert_units_to_lemma
-from mongo_operator import MongoOperator
+from core.mongo_operator import MongoOperator
+from sqlalchemy.sql import text
 
 
 router = APIRouter(
@@ -94,7 +95,6 @@ async def get_estimated_price(ingredient_name: str,
                                 grams_per_cup: Optional[int] = None, 
                                 db: Session = Depends(get_db)):
 
-    #Find the converion metrics for the ingredient
     mongo = MongoOperator()
     results_object = mongo.fuzzy_search(ingredient_name, "ingredient_name")
     results = list(results_object)
@@ -109,16 +109,12 @@ async def get_estimated_price(ingredient_name: str,
     else:
         gram_weight = grams_per_quantity
 
-    #Make calls to postgresdb
-    ingredient_name = prep_string_for_search(ingredient_name)
-    product_model = db.query(models.Products.product_name, models.Products.supermarket, models.Products.product_price_gbp, models.Products.product_quantity, models.Products.gbp_per_100g, models.Products.gbp_per_unit).\
-        filter(models.Products.__ts_vector__.match(ingredient_name)).\
-            order_by(func.length(models.Products.product_name)).\
-                order_by(models.Products.product_price_gbp.asc()).all()
 
+    ingredient_name = prep_string_for_search(ingredient_name)
+    query = f"SELECT product_name, supermarket, product_price_gbp, product_quantity, product_unit, gbp_per_100g, gbp_per_unit FROM supermarket_products_current WHERE __ts_vector__ @@ to_tsquery('english', '{ingredient_name}');"
+    product_model = db.execute(text(query)).all()
 
     if product_model:
-        #Try to process the ingredient with the unit given, otherwise process as possible
         product_model =  product_model[0]
         if ingredient_unit == "EACH":
             if product_model["gbp_per_unit"] is not None:

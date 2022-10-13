@@ -3,8 +3,8 @@ from datetime import datetime
 from sqlalchemy import Boolean, Column, Float, Integer, String, ForeignKey, DateTime, Index, Computed
 from sqlalchemy.dialects.postgresql import JSONB, ARRAY
 from sqlalchemy.orm import relationship
-from database import Base
-from ts_vector import TSVector
+from db import Base
+from core.ts_vector import TSVector
 
 
 class Users(Base):

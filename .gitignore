@@ -1,4 +1,6 @@
 venv
+config.cfg
 alembic.ini
 __pycache__
 routers/__pycache__
+config.cfg

@@ -5,7 +5,7 @@ sys.path.append("..")
 from datetime import datetime
 from fastapi import Depends, HTTPException, APIRouter
 import models
-from database import engine, SessionLocal
+from db import engine, SessionLocal
 from sqlalchemy.orm import Session
 from sqlalchemy.sql.expression import func
 from pydantic import BaseModel, Field
@@ -14,7 +14,7 @@ from routers.auth import get_current_user, user_exception
 from .auth import get_current_user, user_exception, get_password_hash, verify_password
 from datetime import datetime
 from core.conversion_utils import convert_units_to_grams, convert_units_to_lemma
-from mongo_operator import MongoOperator
+from core.mongo_operator import MongoOperator
 
 
 router = APIRouter(

@@ -4,7 +4,7 @@ sys.path.append("..")
 from fastapi import Depends, HTTPException, APIRouter
 from .auth import get_current_user, user_exception, get_password_hash, verify_password
 import models
-from database import engine, SessionLocal
+from db import engine, SessionLocal
 from sqlalchemy.orm import Session
 from sqlalchemy.sql import text
 from pydantic import BaseModel
@@ -12,9 +12,8 @@ from typing import Optional
 from enum import Enum
 import secrets
 from datetime import datetime
-from nlp_formatter import run_nlp
-
-
+from core.nlp_formatter import run_nlp
+from core.query_builder import QueryBuilder
 
 
 router = APIRouter(
@@ -43,7 +42,6 @@ class Recipe(BaseModel):
     ingredients: str
     method: str
     cuisine: Optional[str]
-
 
 
 class MoreLess(str, Enum):
@@ -81,10 +79,8 @@ async def search_by_recipe_name(recipe_name: str, db: Session = Depends(get_db))
 @router.get("/search_by_ingredients/{ingredients}")
 async def search_by_ingredients(ingredients: str, limit_results: Optional[int] = 5, db: Session = Depends(get_db)):
 
-    select_statement = create_select_statement("recipes.id, recipes.recipe_name, recipes.recipe_servings, recipes.recipe_time, recipes.recipe_link")
-    where_clause = json_where_clause_constructor(ingredients, "ingredients")
-    where_clause = where_clause.rsplit('AND', 1)[0]
-    query = select_statement + where_clause + "LIMIT {};".format(limit_results)
+    postgres =  QueryBuilder("recipes.recipe_name, recipe_servings, recipe_time, recipe_link, protein_per_serving_grams, carbs_per_serving_grams, fat_per_serving_grams", limit_results)
+    query = postgres.build_query(ingredients=ingredients)
     recipe_model = db.execute(text(query)).all()
 
     if recipe_model is not None:
@@ -104,11 +100,8 @@ async def search_by_macronutrients(protein_operator: MoreLess = MoreLess.more_th
                 {"nutrient" : "carbs" , "quantity": carbs_quantity, "operator": carbs_operator.value},   
                 {"nutrient" : "fat" , "quantity": fat_quantity, "operator": fat_operator.value}]
 
-    select_statement = create_select_statement("recipes.recipe_name, recipe_servings, recipe_time, recipe_link, protein_per_serving_grams, carbs_per_serving_grams, fat_per_serving_grams")
-    where_clause = json_where_clause_constructor(nutrients, "nutrition")
-    where_clause = where_clause.rsplit('AND', 1)[0]
-    query = select_statement + where_clause + "LIMIT {};".format(limit_results)
-    print(f"SQL QUERY: {query}")
+    postgres =  QueryBuilder("recipes.recipe_name, recipe_servings, recipe_time, recipe_link, protein_per_serving_grams, carbs_per_serving_grams, fat_per_serving_grams", limit_results)
+    query = postgres.build_query(nutrition=nutrients)
     recipe_model = db.execute(text(query)).all()
 
     if recipe_model is not None:
@@ -120,7 +113,7 @@ async def search_by_macronutrients(protein_operator: MoreLess = MoreLess.more_th
 
 
 @router.get("/advanced_search/")
-async def advanced_search(search_query : str, ingredients: str, protein_operator: MoreLess = MoreLess.more_than, protein_quantity: Optional[float] = 0.0,
+async def advanced_search(keyword : str, ingredients: str, protein_operator: MoreLess = MoreLess.more_than, protein_quantity: Optional[float] = 0.0,
                                 carbs_operator: MoreLess = MoreLess.more_than, carbs_quantity: Optional[float] = 0.0, 
                                 fat_operator: MoreLess = MoreLess.more_than, fat_quantity: Optional[float] = 0.0, 
                                 limit_results: Optional[int] = 5, db: Session = Depends(get_db)):
@@ -129,9 +122,9 @@ async def advanced_search(search_query : str, ingredients: str, protein_operator
                 {"nutrient" : "carbs" , "quantity": carbs_quantity, "operator": carbs_operator.value},   
                 {"nutrient" : "fat" , "quantity": fat_quantity, "operator": fat_operator.value}]
 
-    select_statement = create_select_statement("recipes.recipe_name, recipe_servings, recipe_time, recipe_link, protein_per_serving_grams, carbs_per_serving_grams, fat_per_serving_grams")
-    query = json_query_generator_advanced(search_query, select_statement, ingredients, nutrients, limit_results)
-    print(f"SQL QUERY: {query}")
+
+    postgres =  QueryBuilder("recipes.recipe_name, recipe_servings, recipe_time, recipe_link, protein_per_serving_grams, carbs_per_serving_grams, fat_per_serving_grams", limit_results)
+    query = postgres.build_query(keyword=keyword, ingredients=ingredients, nutrition=nutrients)
     recipe_model = db.execute(text(query)).all()
 
     if recipe_model is not None:
@@ -274,49 +267,6 @@ def prep_string_for_search(string):
     string = string.strip()
     string = string.replace(" ", " & ")
     return string
-
-
-def create_select_statement(select_columns):
-    select_statement = "SELECT {} FROM recipe_nutrition JOIN recipes ON recipe_nutrition.id = recipes.id WHERE ".format(str(select_columns))
-    return select_statement
-
-
-def json_query_generator_advanced(keyword, select_statement, ingredient_list, nutrition_list, limit):
-    keyword_where_clause = ts_vector_query_constructor(keyword)
-    ingredients_where_clause =  json_where_clause_constructor(ingredient_list, "ingredients")
-    nutrition_where_clause =  json_where_clause_constructor(nutrition_list, "nutrition")
-    query = select_statement + keyword_where_clause + ingredients_where_clause + nutrition_where_clause
-    query = query.rsplit('AND', 1)[0]
-    final_query = query + "LIMIT {};".format(limit)
-    return final_query
-
-
-def ts_vector_query_constructor(keyword):
-    keyword_query = "__ts_vector__ @@ to_tsquery('english', '{}')".format(keyword)
-    return keyword_query + " AND "
-
-
-def json_where_clause_constructor(query_list, field):
-    where_clause = ''
-
-    if field == "ingredients":
-        query_list =  query_list.split(',')
-        for x, i in enumerate(query_list): 
-            i = i.strip()
-            where_clause =  where_clause + "ingredients_map->>'{}' = 'true' AND ".format(i)
-
-
-    elif field == "nutrition":
-        for x, obj in enumerate(query_list):
-            if obj["quantity"] > 0:
-                nutrient =  obj["nutrient"]
-                quantity = obj["quantity"]
-                op = obj["operator"]
-                op = ">=" if op == "More than" else "<="
-                where_clause =  where_clause + f"{nutrient}_per_serving_grams {op} {quantity} AND "
-     
-    return where_clause
-
 
 
 

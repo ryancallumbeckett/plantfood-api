@@ -4,7 +4,7 @@ sys.path.append("..")
 
 from fastapi import Depends, HTTPException, APIRouter
 import models
-from database import engine, SessionLocal
+from db import engine, SessionLocal
 from sqlalchemy.orm import Session
 from pydantic import BaseModel, Field
 from typing import Optional
