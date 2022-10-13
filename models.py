@@ -150,7 +150,7 @@ class CommunityProducts(Base):
     quantity = Column(Float)
     unit = Column(String)
     product_image = Column(String)
-    owner_id = Column(Integer, ForeignKey("users.id"))
+    owner_id = Column(String, ForeignKey("users.id"))
     date = Column(DateTime) 
 
     # owner = relationship("Users", back_populates="products")
