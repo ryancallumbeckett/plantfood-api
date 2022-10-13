@@ -25,3 +25,6 @@ app.include_router(products.router)
 app.include_router(posts.router)
 
 
+@app.get("/")
+def root():
+    return {"message" : "Hello World"}
