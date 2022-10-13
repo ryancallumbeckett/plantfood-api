@@ -19,7 +19,7 @@ class Users(Base):
     is_active = Column(Boolean, default=True)
     public_channel = Column(Boolean, default=True)
 
-    products = relationship("CommunityProducts", back_populates="owner")
+    # products = relationship("CommunityProducts", back_populates="owner")
 
 
 class Channels(Base):
@@ -72,7 +72,7 @@ class RecipeDetails(Base):
     method_formatted = Column(ARRAY(String))
     last_updated = Column(DateTime)
 
-    id = Column(Integer, primary_key=True, index=True)
+    # id = Column(Integer, primary_key=True, index=True)
 
 
 class RecipeNutrition(Base):
@@ -88,7 +88,7 @@ class RecipeNutrition(Base):
     calories_per_serving = Column(Float)
     nutrition_per_serving = Column(JSONB)
 
-    id = Column(Integer, primary_key=True, index=True)
+    # id = Column(Integer, primary_key=True, index=True)
 
 
 class Ingredients(Base):
@@ -153,6 +153,6 @@ class CommunityProducts(Base):
     owner_id = Column(Integer, ForeignKey("users.id"))
     date = Column(DateTime) 
 
-    owner = relationship("Users", back_populates="products")
+    # owner = relationship("Users", back_populates="products")
 
 
