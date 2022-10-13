@@ -55,8 +55,8 @@ class Recipes(Base):
          "to_tsvector('english', recipe_name)",
          persisted=True))
 
-    __table_args__ = (Index('recipe_name__ts_vector__',
-          __ts_vector__, postgresql_using='gin'),)
+    # __table_args__ = (Index('recipe_name__ts_vector__',
+    #       __ts_vector__, postgresql_using='gin'),)
 
 
 class RecipeDetails(Base):
@@ -109,8 +109,8 @@ class Ingredients(Base):
          "to_tsvector('english', ingredient_name)",
          persisted=True))
 
-    __table_args__ = (Index('ix_video___ts_vector__',
-          __ts_vector__, postgresql_using='gin'),)
+    # __table_args__ = (Index('ix_video___ts_vector__',
+    #       __ts_vector__, postgresql_using='gin'),)
 
 
 
@@ -134,8 +134,8 @@ class Products(Base):
          "to_tsvector('english', product_name || ' ' || supermarket)",
          persisted=True))
 
-    __table_args__ = (Index('ix_video___ts_vector__',
-          __ts_vector__, postgresql_using='gin'),)
+    # __table_args__ = (Index('ix_video___ts_vector__',
+    #       __ts_vector__, postgresql_using='gin'),)
 
 
 class CommunityProducts(Base):

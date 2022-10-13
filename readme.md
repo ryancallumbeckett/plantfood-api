@@ -19,3 +19,6 @@ This creates a file in the versions folder with the task name
 Upgrade =  alembic upgrade [revision_number]
 
 Downgrade = alembic downgrade [-1]
+
+Push to heroku:
+git push heroku HEAD:master
