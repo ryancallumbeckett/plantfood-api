@@ -1,17 +1,12 @@
 from pymongo import MongoClient
 from configparser import ConfigParser
+from config import settings
 
 class MongoOperator():
     ''' An object to interact with MongoDB'''
 
-    config = ConfigParser()
-    config.read('./config.cfg')
-    username = config['MONGODB']['username']
-    password = config['MONGODB']['password']
-    cluster = f"mongodb+srv://{username}:{password}@cluster0.rjktdw5.mongodb.net/?retryWrites=true&w=majority"
-
-
-        
+    cluster = f"mongodb+srv://{settings.mongo_username}:{settings.mongo_password}@cluster0.rjktdw5.mongodb.net/?retryWrites=true&w=majority"
+ 
     def fuzzy_search(self, search_query, path):
 
         client = MongoClient(self.cluster)

@@ -182,7 +182,7 @@ async def create_recipe(create_recipe: Recipe, user: dict = Depends(get_current_
     db.add(details_model)
     db.commit()
 
-    return successful_response(200)
+    return successful_response(201)
 
 
 

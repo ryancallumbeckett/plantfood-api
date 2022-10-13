@@ -1,7 +1,6 @@
 
 import sys 
 sys.path.append("..")
-
 from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordRequestForm, OAuth2PasswordBearer
 from pydantic import BaseModel
@@ -10,12 +9,15 @@ from passlib.context import CryptContext
 import models
 from sqlalchemy.orm import Session
 from db import SessionLocal, engine
-from datetime import date, datetime, timedelta
+from datetime import datetime, timedelta
 from jose import jwt, JWTError
 import secrets
+from config import settings
 
-SECRET_KEY = "xE0kfXzPW1MMaisIPPoUWMg3oruSBCpt"
-ALGORITHM =  "HS256"
+SECRET_KEY = settings.secret_key
+ALGORITHM =  settings.algorithm
+ACCESS_TOKEN_EXPIRATION_TIME = settings.access_token_expiration_time
+
 
 class CreateUser(BaseModel):
     username: str
@@ -68,7 +70,7 @@ def create_access_token(username: str, user_id: int, expires_delta: Optional[tim
     if expires_delta:
         expire = datetime.utcnow() + expires_delta
     else:
-        expire = datetime.utcnow() + timedelta(minutes=15)
+        expire = datetime.utcnow() + timedelta(minutes=ACCESS_TOKEN_EXPIRATION_TIME)
     encode.update({"exp": expire})
     return jwt.encode(encode, SECRET_KEY, algorithm=ALGORITHM)
 
@@ -86,7 +88,7 @@ async def get_current_user(token: str = Depends(oauth2_bearer)):
         raise user_exception()
 
 
-@router.post("/create/user")
+@router.post("/create_user")
 async def create_new_user(create_user: CreateUser, db: Session = Depends(get_db)):
     create_user_model = models.Users()
     user_id = secrets.token_hex(nbytes=16)
@@ -125,7 +127,7 @@ async def create_new_user(create_user: CreateUser, db: Session = Depends(get_db)
     return "User created successfully"
 
 
-@router.post("/token")
+@router.post("/login")
 async def login_for_access_token(form_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depends(get_db)):
     user = authenticate_user(form_data.username, form_data.password, db)
     if not user:

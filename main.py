@@ -1,5 +1,5 @@
 
-from fastapi import FastAPI, Depends
+from fastapi import FastAPI
 import models
 from db import engine
 from fastapi.middleware.cors import CORSMiddleware

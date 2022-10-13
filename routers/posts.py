@@ -34,8 +34,7 @@ class Product(BaseModel):
     suppliers: list
     product_name: str
     product_url: Optional[str]
-    product_price: float = None
-    price_by_weight: Optional[str]
+    product_price_gbp: float = None
     quantity: float = None
     unit: str = None
     product_image: Optional[str]
@@ -61,7 +60,7 @@ async def read_product_by_id(product_id: str, db: Session = Depends(get_db)):
 
 
 
-@router.post("/products/product")
+@router.post("/products/")
 async def add_product(product: Product, user: dict = Depends(get_current_user), db: Session = Depends(get_db)):
 
     if user is None:
@@ -71,7 +70,7 @@ async def add_product(product: Product, user: dict = Depends(get_current_user), 
         product_model.supplier = s
         product_model.product_name = product.product_name
         product_model.product_url = product.product_url
-        product_model.product_price = product.product_price
+        product_model.product_price = product.product_price_gbp
         product_model.quantity = product.quantity
         product_model.unit = product.unit
         product_model.product_image = product.product_image
@@ -81,7 +80,7 @@ async def add_product(product: Product, user: dict = Depends(get_current_user), 
         db.add(product_model)
         db.commit()
 
-    return successful_response(201)
+    return successful_response(201), product_model
 
 
 @router.delete("/products/{product_id}")

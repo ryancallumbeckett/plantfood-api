@@ -1,13 +1,9 @@
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.ext.declarative import declarative_base
-from configparser import ConfigParser
+from config import settings
 
-config = ConfigParser()
-config.read('./config.cfg')
-
-SQLALCHEMY_DATABASE_URL = f"postgresql://{config['POSTGRES']['username']}:{config['POSTGRES']['password']}@{config['POSTGRES']['host']}/{config['POSTGRES']['database']}"
-
+SQLALCHEMY_DATABASE_URL = f"postgresql://{settings.database_username}:{settings.database_password}@{settings.database_hostname}/{settings.database_name}"
 
 engine = create_engine(
     SQLALCHEMY_DATABASE_URL
