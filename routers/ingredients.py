@@ -1,18 +1,11 @@
 
-from audioop import avg
 import sys
 sys.path.append("..")
-from datetime import datetime
 from fastapi import Depends, HTTPException, APIRouter
 import models
-from db import engine, SessionLocal
+from db import engine, get_db
 from sqlalchemy.orm import Session
-from sqlalchemy.sql.expression import func
-from pydantic import BaseModel, Field
 from typing import Optional
-from routers.auth import get_current_user, user_exception
-from .auth import get_current_user, user_exception, get_password_hash, verify_password
-from datetime import datetime
 from core.conversion_utils import convert_units_to_grams, convert_units_to_lemma
 from core.mongo_operator import MongoOperator
 from sqlalchemy.sql import text
@@ -24,15 +17,7 @@ router = APIRouter(
     responses={404: {"description": "Not found"}}
 )
 
-models.Base.metadata.create_all(bind=engine)
-
-
-def get_db():
-    try:
-        db = SessionLocal()
-        yield db
-    finally:
-        db.close()
+# models.Base.metadata.create_all(bind=engine)
 
 
 @router.get("/{ingredient_id}")

@@ -1,15 +1,15 @@
 
 import sys 
 sys.path.append("..")
-
-from fastapi import Depends, HTTPException, APIRouter
-import models
-from db import engine, SessionLocal
+from routers.oauth2 import get_current_user, user_exception
+from .oauth2 import get_current_user, user_exception, get_password_hash, verify_password
+from fastapi import Depends, HTTPException, APIRouter, status
+from schemas import CreateUser, UserVerification
+from db import engine, get_db
 from sqlalchemy.orm import Session
-from pydantic import BaseModel, Field
-from typing import Optional
-from routers.auth import get_current_user, user_exception
-from .auth import get_current_user, user_exception, get_password_hash, verify_password
+import secrets
+import models
+
 
 router = APIRouter(
     prefix="/users",
@@ -17,21 +17,7 @@ router = APIRouter(
     responses={404: {"description": "Not found"}}
 )
 
-models.Base.metadata.create_all(bind=engine)
-
-
-def get_db():
-    try:
-        db = SessionLocal()
-        yield db
-    finally:
-        db.close()
-
-
-class UserVerification(BaseModel):
-    username: str
-    password: str
-    new_password: str
+# models.Base.metadata.create_all(bind=engine)
 
 
 @router.get("/")
@@ -47,7 +33,7 @@ async def read_user_query(user_id: int, db: Session = Depends(get_db)):
     raise 'Ivalid user_id'
 
 
-@router.get("/user")
+@router.get("/user/")
 async def read_user_parameter(user_id: int, db: Session = Depends(get_db)):
     user_model = db.query(models.Users).filter(models.Users.id == user_id).first()
     print(user_model.username)
@@ -56,7 +42,7 @@ async def read_user_parameter(user_id: int, db: Session = Depends(get_db)):
     raise 'Ivalid user_id'
 
 
-@router.put("/user/password")
+@router.put("/user/update_password/")
 async def update_password(user_verification: UserVerification, current_user: dict = Depends(get_current_user), db: Session = Depends(get_db)):
 
     if current_user is None:
@@ -77,8 +63,8 @@ async def update_password(user_verification: UserVerification, current_user: dic
  
 
 
-@router.delete("/user")
-async def delete_user(current_user: dict = Depends(get_current_user), db: Session = Depends(get_db)):
+@router.delete("/user/{user_id}")
+async def delete_user(user_id: str, current_user: dict = Depends(get_current_user), db: Session = Depends(get_db)):
 
     if current_user is None:
         raise user_exception()
@@ -88,10 +74,50 @@ async def delete_user(current_user: dict = Depends(get_current_user), db: Sessio
     if user_model is None:
         raise "Invalid user or request"
 
-    db.query(models.Users).filter(models.Users.id == current_user.get("id")).delete()
+    db.query(models.Users).filter(user_id == current_user.get("id")).delete()
     db.commit()
 
     return "Delete successful"
+
+
+
+@router.post("/create_user/", status_code=status.HTTP_201_CREATED)
+async def create_new_user(create_user: CreateUser, db: Session = Depends(get_db)):
+    new_user = models.Users()
+    user_id = secrets.token_hex(nbytes=16)
+    new_user.id = user_id
+    new_user.email = create_user.email
+    new_user.username = create_user.username
+    new_user.first_name = create_user.first_name
+    new_user.last_name = create_user.last_name
+
+    hash_password = get_password_hash(create_user.password)
+
+    new_user.hashed_password =  hash_password
+    new_user.is_active = True
+    new_user.public_channel = create_user.public_channel
+
+    db.add(new_user)
+
+    if create_user.public_channel is True:
+    
+        create_channel_model = models.Channels()
+        channel_name = create_user.username
+        create_channel_model.id = user_id
+        create_channel_model.channel_name = channel_name
+        create_channel_model.channel_path = channel_name.replace(" ", "-").lower()
+        create_channel_model.recipe_count = 0
+        create_channel_model.website = None
+        create_channel_model.facebook = None
+        create_channel_model.instagram = None
+        create_channel_model.youtube = None
+        create_channel_model.user_id = user_id
+
+        db.add(create_channel_model)
+    
+    db.commit()
+
+    return "User created successfully"
 
 
 

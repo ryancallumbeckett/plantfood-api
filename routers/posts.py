@@ -4,12 +4,12 @@ sys.path.append("..")
 from datetime import datetime
 from fastapi import Depends, HTTPException, APIRouter
 import models
-from db import engine, SessionLocal
+from db import engine, get_db
 from sqlalchemy.orm import Session
 from pydantic import BaseModel
 from typing import Optional
-from routers.auth import get_current_user, user_exception
-from .auth import get_current_user, user_exception
+from routers.oauth2 import get_current_user, user_exception
+from .oauth2 import get_current_user, user_exception
 from datetime import datetime
 
 
@@ -19,15 +19,7 @@ router = APIRouter(
     responses={404: {"description": "Not found"}}
 )
 
-models.Base.metadata.create_all(bind=engine)
-
-
-def get_db():
-    try:
-        db = SessionLocal()
-        yield db
-    finally:
-        db.close()
+# models.Base.metadata.create_all(bind=engine)
 
 
 class Product(BaseModel):
@@ -48,7 +40,6 @@ class Recipe(BaseModel):
     recipe_time: Optional[str]
     recipe_servings: Optional[str]
     recipe_cuisine: Optional[str]
-
 
 
 @router.get("/products/{product_id}")

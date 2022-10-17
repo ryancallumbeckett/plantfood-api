@@ -2,18 +2,17 @@
 import sys
 sys.path.append("..")
 from fastapi import Depends, HTTPException, APIRouter
-from .auth import get_current_user, user_exception, get_password_hash, verify_password
-import models
-from db import engine, SessionLocal
+from .oauth2 import get_current_user, user_exception
+from schemas import Recipe, MoreLess 
+from db import engine, get_db
 from sqlalchemy.orm import Session
 from sqlalchemy.sql import text
-from pydantic import BaseModel
 from typing import Optional
-from enum import Enum
-import secrets
 from datetime import datetime
 from core.nlp_formatter import run_nlp
 from core.query_builder import QueryBuilder
+import secrets
+import models
 
 
 router = APIRouter(
@@ -22,31 +21,7 @@ router = APIRouter(
     responses={404: {"description": "Not found"}}
 )
 
-models.Base.metadata.create_all(bind=engine)
-
-
-def get_db():
-    try:
-        db = SessionLocal()
-        yield db
-    finally:
-        db.close()
-
-
-class Recipe(BaseModel):
-    recipe_name: str
-    recipe_link: str
-    recipe_image: str
-    recipe_servings: int
-    recipe_time: float
-    ingredients: str
-    method: str
-    cuisine: Optional[str]
-
-
-class MoreLess(str, Enum):
-    more_than = "More than"
-    less_than = "Less than"
+# models.Base.metadata.create_all(bind=engine)
 
 
 

@@ -1,5 +1,4 @@
 from pymongo import MongoClient
-from configparser import ConfigParser
 from config import settings
 
 class MongoOperator():
@@ -28,4 +27,5 @@ class MongoOperator():
         ])
 
         return result
+
 
