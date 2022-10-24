@@ -15,7 +15,7 @@ from datetime import datetime
 
 router = APIRouter(
     prefix="/posts",
-    tags=["posts"],
+    tags=["Posts"],
     responses={404: {"description": "Not found"}}
 )
 

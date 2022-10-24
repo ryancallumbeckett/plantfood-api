@@ -11,6 +11,7 @@ from db import engine, get_db
 from datetime import datetime, timedelta
 from jose import jwt, JWTError
 from config import settings
+from schemas import Token
 
 SECRET_KEY = settings.secret_key
 ALGORITHM =  settings.algorithm
@@ -26,7 +27,7 @@ oauth2_bearer = OAuth2PasswordBearer(tokenUrl="token")
 
 router = APIRouter(
     prefix="/auth",
-    tags=["auth"],
+    tags=["Authentication"],
     responses={401: {"user": "Not authorized"}}
 )
 
@@ -36,8 +37,8 @@ def get_password_hash(password):
     return bcrypt_context.hash(password)
 
 
-def verify_password(plain_password, hashed_password):
-    return bcrypt_context.verify(plain_password, hashed_password)
+def verify_password(plain_password, password):
+    return bcrypt_context.verify(plain_password, password)
 
 
 def authenticate_user(username: str, password: str, db):
@@ -45,7 +46,7 @@ def authenticate_user(username: str, password: str, db):
 
     if not user:
         return False
-    if not verify_password(password, user.hashed_password):
+    if not verify_password(password, user.password):
         return False
     return user
 
@@ -74,7 +75,7 @@ async def get_current_user(token: str = Depends(oauth2_bearer)):
         raise user_exception()
 
 
-@router.post("/login/")
+@router.post("/login/", response_model=Token, status_code=status.HTTP_200_OK)
 async def login_for_access_token(form_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depends(get_db)):
     user = authenticate_user(form_data.username, form_data.password, db)
     if not user:

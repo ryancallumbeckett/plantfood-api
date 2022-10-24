@@ -10,10 +10,16 @@ class UserBase(BaseModel):
     first_name: str
     last_name: str
 
+    class Config:
+        orm_mode = True
+
 
 class CreateUser(UserBase):
     password: str
     public_channel: bool
+
+    class Config:
+        orm_mode = True
 
 
 class UserVerification(BaseModel):
@@ -49,3 +55,6 @@ class Product(BaseModel):
     product_image: Optional[str]
     date: datetime
 
+
+class Token(BaseModel):
+    token: str

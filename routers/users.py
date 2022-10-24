@@ -1,10 +1,11 @@
 
+from hashlib import new
 import sys 
 sys.path.append("..")
 from routers.oauth2 import get_current_user, user_exception
 from .oauth2 import get_current_user, user_exception, get_password_hash, verify_password
 from fastapi import Depends, HTTPException, APIRouter, status
-from schemas import CreateUser, UserVerification
+from schemas import CreateUser, UserVerification, UserBase
 from db import engine, get_db
 from sqlalchemy.orm import Session
 import secrets
@@ -13,7 +14,7 @@ import models
 
 router = APIRouter(
     prefix="/users",
-    tags=["users"],
+    tags=["Users"],
     responses={404: {"description": "Not found"}}
 )
 
@@ -81,22 +82,16 @@ async def delete_user(user_id: str, current_user: dict = Depends(get_current_use
 
 
 
-@router.post("/create_user/", status_code=status.HTTP_201_CREATED)
+@router.post("/create_user/", response_model=UserBase, status_code=status.HTTP_201_CREATED)
 async def create_new_user(create_user: CreateUser, db: Session = Depends(get_db)):
-    new_user = models.Users()
-    user_id = secrets.token_hex(nbytes=16)
-    new_user.id = user_id
-    new_user.email = create_user.email
-    new_user.username = create_user.username
-    new_user.first_name = create_user.first_name
-    new_user.last_name = create_user.last_name
 
     hash_password = get_password_hash(create_user.password)
-
-    new_user.hashed_password =  hash_password
+    create_user.password = hash_password
+    new_user = models.Users(**create_user.dict())
+    user_id = secrets.token_hex(nbytes=16)
+    new_user.id = user_id
     new_user.is_active = True
-    new_user.public_channel = create_user.public_channel
-
+  
     db.add(new_user)
 
     if create_user.public_channel is True:
@@ -117,7 +112,9 @@ async def create_new_user(create_user: CreateUser, db: Session = Depends(get_db)
     
     db.commit()
 
-    return "User created successfully"
+    print(new_user.first_name)
+
+    return new_user
 
 
 

@@ -13,7 +13,7 @@ from sqlalchemy.sql import text
 
 router = APIRouter(
     prefix="/ingredients",
-    tags=["ingredients"],
+    tags=["Ingredients"],
     responses={404: {"description": "Not found"}}
 )
 

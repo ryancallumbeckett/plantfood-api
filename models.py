@@ -15,7 +15,7 @@ class Users(Base):
     username = Column(String, unique=True, index=True)
     first_name = Column(String)
     last_name = Column(String)
-    hashed_password = Column(String)
+    password = Column(String)
     is_active = Column(Boolean, default=True)
     public_channel = Column(Boolean, default=True)
 

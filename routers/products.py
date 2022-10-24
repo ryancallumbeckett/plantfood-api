@@ -16,7 +16,7 @@ from core.mongo_operator import MongoOperator
 
 router = APIRouter(
     prefix="/products",
-    tags=["products"],
+    tags=["Products"],
     responses={404: {"description": "Not found"}}
 )
 

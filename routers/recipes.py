@@ -1,7 +1,7 @@
 
 import sys
 sys.path.append("..")
-from fastapi import Depends, HTTPException, APIRouter
+from fastapi import Depends, HTTPException, APIRouter, status
 from .oauth2 import get_current_user, user_exception
 from schemas import Recipe, MoreLess 
 from db import engine, get_db
@@ -17,7 +17,7 @@ import models
 
 router = APIRouter(
     prefix="/recipes",
-    tags=["recipes"],
+    tags=["Recipes"],
     responses={404: {"description": "Not found"}}
 )
 
@@ -109,7 +109,7 @@ async def advanced_search(keyword : str, ingredients: str, protein_operator: Mor
 
 
 @router.post("/")
-async def create_recipe(create_recipe: Recipe, user: dict = Depends(get_current_user), db: Session = Depends(get_db)):
+async def create_recipe(create_recipe: Recipe, user: dict = Depends(get_current_user), db: Session = Depends(get_db), status_code=status.HTTP_201_CREATED):
 
     if user is None:
         raise user_exception()
