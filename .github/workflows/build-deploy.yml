@@ -4,7 +4,7 @@ on: [push, pull_request]
 
 jobs:
   job1:
-    runs-on: macos-latest
+    runs-on: ububtu-latest
     steps:
       - name: pull git repo
         uses: actions/checkout@v2
