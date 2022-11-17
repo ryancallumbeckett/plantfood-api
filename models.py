@@ -94,7 +94,7 @@ class RecipeNutrition(Base):
 class Ingredients(Base):
     __tablename__ = "ingredients"
 
-    id = Column(Integer, primary_key=True, index=True)
+    id = Column(String, primary_key=True, index=True)
     ingredient_name = Column(String, unique=True, index=True)
     ingredient_image = Column(String)
     ingredient_categories = Column(JSONB)

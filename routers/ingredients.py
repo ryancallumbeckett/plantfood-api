@@ -20,8 +20,18 @@ router = APIRouter(
 # models.Base.metadata.create_all(bind=engine)
 
 
-@router.get("/{ingredient_id}")
-async def get_product_by_id(ingredient_id: str, db: Session = Depends(get_db)):
+@router.get("/")
+async def get_ingredients(db: Session = Depends(get_db)):
+    ingredient_model = db.query(models.Ingredients).first()
+    if ingredient_model is not None:
+        return ingredient_model
+    raise http_exception()
+
+
+
+
+@router.get("/{ingredient_id}/")
+async def get_ingredient_by_id(ingredient_id: str, db: Session = Depends(get_db)):
     ingredient_model = db.query(models.Ingredients).filter(models.Ingredients.id == ingredient_id).first()
     if ingredient_model is not None:
         return ingredient_model
@@ -30,7 +40,7 @@ async def get_product_by_id(ingredient_id: str, db: Session = Depends(get_db)):
 
 
 
-@router.get("/ingredient/{ingredient_search}")
+@router.get("/ingredient/{ingredient_search}/")
 async def search_ingredients(ingredient_name: str, db: Session = Depends(get_db)):
 
     ingredient_name = prep_string_for_search(ingredient_name)
@@ -44,7 +54,7 @@ async def search_ingredients(ingredient_name: str, db: Session = Depends(get_db)
 
 
 
-@router.get("/ingredient/nutrition/{ingredient_id}")
+@router.get("/ingredient/nutrition/{ingredient_id}/")
 async def get_nutrition_by_id(ingredient_id: str, db: Session = Depends(get_db)):
 
     ingredient_model = db.query(models.Ingredients.ingredient_name, models.Ingredients.id, models.Ingredients.ingredient_image, 

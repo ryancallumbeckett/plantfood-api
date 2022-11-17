@@ -58,3 +58,6 @@ class Product(BaseModel):
 
 class Token(BaseModel):
     token: str
+
+class Ingredient(BaseModel):
+    ingredient_name: str

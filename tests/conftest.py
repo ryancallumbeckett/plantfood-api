@@ -7,7 +7,7 @@ from config import settings
 from db import get_db, Base
 from main import app
 import models
-
+from routers.oauth2 import create_access_token
 
 
 
@@ -53,3 +53,15 @@ def test_user(client):
     new_user["password"] = new_user_2["password"]
     return new_user
     
+
+@pytest.fixture
+def token(test_user):
+    return create_access_token('ryanbeckett', 49503498, 15)
+
+
+@pytest.fixture
+def authorized_client(client, token):
+    client.headers = {
+        **client.headers, 
+        "Authorization" : f"Bearer {token}"
+    }

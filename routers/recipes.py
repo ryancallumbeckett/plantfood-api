@@ -25,7 +25,7 @@ router = APIRouter(
 
 
 
-@router.get("/{recipe_id}")
+@router.get("/{recipe_id}/")
 async def get_recipe_by_id(recipe_id: str, db: Session = Depends(get_db)):
 
     recipe_model = db.query(models.Recipes).filter(models.Recipes.id == recipe_id).first()
@@ -37,7 +37,7 @@ async def get_recipe_by_id(recipe_id: str, db: Session = Depends(get_db)):
 
 
 
-@router.get("/search_by_title/{recipe_name}")
+@router.get("/search_by_title/{recipe_name}/")
 async def search_by_recipe_name(recipe_name: str, db: Session = Depends(get_db)):
 
     recipe_query = prep_string_for_search(recipe_name)
@@ -51,7 +51,7 @@ async def search_by_recipe_name(recipe_name: str, db: Session = Depends(get_db))
 
 
 
-@router.get("/search_by_ingredients/{ingredients}")
+@router.get("/search_by_ingredients/{ingredients}/")
 async def search_by_ingredients(ingredients: str, limit_results: Optional[int] = 5, db: Session = Depends(get_db)):
 
     postgres =  QueryBuilder("recipes.recipe_name, recipe_servings, recipe_time, recipe_link, protein_per_serving_grams, carbs_per_serving_grams, fat_per_serving_grams", limit_results)
