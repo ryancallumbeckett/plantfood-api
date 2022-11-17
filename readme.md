@@ -22,3 +22,5 @@ Downgrade = alembic downgrade [-1]
 
 Push to heroku:
 git push heroku HEAD:master
+
+Change
